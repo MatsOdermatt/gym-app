@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym App</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <meta name="theme-color" content="#121212"/>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Gym App</h1>
+        </header>
+        <main>
+            <section id="workouts">
+                <h2>Workouts</h2>
+                <form id="add-workout-form">
+                    <input type="text" id="workout-name" placeholder="Workout Name" required>
+                    <button type="submit">Workout hinzufügen</button>
+                </form>
+                <ul id="workout-list"></ul>
+            </section>
+
+            <section id="exercises">
+                <h2>Übungen</h2>
+                <form id="add-exercise-form">
+                    <input type="text" id="exercise-name" placeholder="Übung Name" required>
+                    <input type="number" id="exercise-weight" placeholder="Gewicht (kg)" required>
+                    <input type="number" id="exercise-reps" placeholder="Wiederholungen" required>
+                    <button type="submit">Übung hinzufügen</button>
+                </form>
+                <ul id="exercise-list"></ul>
+            </section>
+
+            <section id="body-metrics">
+                <h2>Körperwerte</h2>
+                <form id="add-body-metric-form">
+                    <input type="date" id="body-metric-date" required>
+                    <input type="number" id="body-metric-weight" placeholder="Gewicht" required>
+                    <select id="body-metric-unit">
+                        <option value="kg">kg</option>
+                        <option value="lbs">lbs</option>
+                    </select>
+                    <button type="submit">Körperwert hinzufügen</button>
+                </form>
+                <ul id="body-metric-list"></ul>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
