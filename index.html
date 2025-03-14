@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Tracker</title>
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiR3ltIFRyYWNrZXIiLCJzaG9ydF9uYW1lIjoiR3ltVHJhY2tlciIsInN0YXJ0X3VybCI6Ii4vaW5kZXguaHRtbCIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMwMDAwMDAiLCJ0aGVtZV9jb2xvciI6IiMwMDdhZmYifQ==">
+    <style>
+        :root {
+            --primary-color: #007afa;
+            --secondary-color: #5ac8fa;
+            --background-color: #f2f2f7;
+            --card-background: #ffffff;
+            --text-color: #000000;
+            --secondary-text-color: #8e8e93;
+            --border-color: #c6c6c8;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #000000;
+                --card-background: #1c1c1e;
+                --text-color: #ffffff;
+                --secondary-text-color: #8e8e93;
+                --border-color: #38383a;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: 70px;
+        }
+        
+        .header {
+            background-color: var(--background-color);
+            padding: 10px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            flex: 1;
+        }
+        
+        .header-button {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 16px;
+            padding: 8px;
+            cursor: pointer;
+        }
+        
+        .list {
+            list-style: none;
+            background-color: var(--card-background);
+            margin: 16px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .list-header {
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--secondary-text-color);
+        }
+        
+        .list-item {
+            display: flex;
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        
+        .list-item-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        
+        .list-item-title {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        
+        .list-item-subtitle {
+            font-size: 14px;
+            color: var(--secondary-text-color);
+        }
+        
+        .tabbar {
+            display: flex;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--card-background);
+            border-top: 1px solid var(--border-color);
+            z-index: 1000;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        .tab {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+            color: var(--secondary-text-color);
+            text-decoration: none;
+        }
+        
+        .tab.active {
+            color: var(--primary-color);
+        }
+        
+        .tab svg {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 2px;
+        }
+        
+        .tab-label {
+            font-size: 10px;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .modal-content {
+            background-color: var(--card-background);
+            border-radius: 12px 12px 0 0;
+            margin-top: auto;
+            padding: 20px 16px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--card-background);
+            color: var(--text-color);
+            font-size: 16px;
+        }
+        
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .button-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .button-secondary {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+        
+        .workout-timer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+        }
+        
+        .timer-display {
+            font-size: 40px;
+            font-weight: bold;
+            font-family: monospace;
+        }
+        
+        .timer-controls {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .timer-button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--primary-color);
+        }
+        
+        .checkbox {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 2px solid var(--primary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .checkbox.checked {
+            background-color: var(--primary-color);
+        }
+        
+        .chart-container {
+            height: 250px;
+            position: relative;
+            margin: 16px 0;
+        }
+        
+        .back-link {
+            text-decoration: none;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+        }
+        
+        .screen {
+            display: none;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        .icon {
+            fill: currentColor;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <!-- Screens -->
+    <div id="workouts-screen" class="screen active">
+        <div class="header">
+            <div></div>
+            <h1>Workouts</h1>
+            <button class="header-button" onclick="showModal('new-workout-modal')">+</button>
+        </div>
+        <ul id="workouts-list" class="list"></ul>
+    </div>
+    
+    <div id="workout-detail-screen" class="screen">
+        <div class="header">
+            <button class="header-button" onclick="navigateTo('workouts-screen')">←</button>
+            <h1 id="workout-detail-title">Workout</h1>
+            <div></div>
+        </div>
+        
+        <div class="list">
+            <div class="list-header">Workout-Timer</div>
+            <div class="workout-timer">
+                <div class="timer-display" id="timer-display">03:00</div>
+                <div class="timer-controls">
+                    <button class="timer-button" id="timer-toggle">▶</button>
+                    <button class="timer-button" id="timer-reset">↺</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="list">
+            <div class="list-header">Übungen</div>
+            <ul id="workout-exercises-list"></ul>
+        </div>
+    </div>
+    
+    <div id="exercises-screen" class="screen">
+        <div class="header">
+            <div></div>
+            <h1>Übungen</h1>
+            <button class="header-button" onclick="showModal('new-exercise-modal')">+</button>
+        </div>
+        <ul id="exercises-list" class="list"></ul>
+    </div>
+    
+    <div id="exercise-detail-screen" class="screen">
+        <div class="header">
+            <button class="header-button" onclick="navigateTo('exercises-screen')">←</button>
+            <h1 id="exercise-detail-title">Übung</h1>
+            <button class="header-button" onclick="showAddSetModal()">+ Satz</button>
+        </div>
+        
+        <div id="progress-section" class="list">
+            <div class="list-header">Fortschritt</div>
+            <div class="list-item" onclick="navigateTo('exercise-progress-screen')">
+                <div class="list-item-title">Fortschritt anzeigen</div>
+                <span>→</span>
+            </div>
+        </div>
+        
+        <div class="list">
+            <div class="list-header">Notizen</div>
+            <div class="list-item">
+                <div id="exercise-notes">Keine Notizen</div>
+            </div>
+        </div>
+        
+        <div class="list">
+            <div class="list-header">Sätze</div>
+            <ul id="exercise-sets-list"></ul>
+        </div>
+    </div>
+    
+    <div id="exercise-progress-screen" class="screen">
+        <div class="header">
+            <button class="header-button" onclick="navigateTo('exercise-detail-screen')">←</button>
+            <h1 id="exercise-progress-title">Fortschritt</h1>
+            <div></div>
+        </div>
+        
+        <div class="list">
+            <div class="list-header">Gewicht</div>
+            <div class="chart-container">
+                <canvas id="weight-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="list">
+            <div class="list-header">Wiederholungen</div>
+            <div class="chart-container">
+                <canvas id="reps-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div id="measurements-screen" class="screen">
+        <div class="header">
+            <div></div>
+            <h1>Körperwerte</h1>
+            <button class="header-button" onclick="showModal('new-measurement-modal')">+</button>
+        </div>
+        <ul id="measurements-list" class="list"></ul>
+    </div>
+    
+    <div id="measurement-detail-screen" class="screen">
+        <div class="header">
+            <button class="header-button" onclick="navigateTo('measurements-screen')">←</button>
+            <h1 id="measurement-detail-title">Körperwert</h1>
+            <button class="header-button" onclick="showAddMeasurementEntryModal()">+ Eintrag</button>
+        </div>
+        
+        <div id="measurement-progress-chart" class="list">
+            <div class="list-header">Fortschritt</div>
+            <div class="chart-container">
+                <canvas id="measurement-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="list">
+            <div class="list-header">Einträge</div>
+            <ul id="measurement-entries-list"></ul>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <div id="new-workout-modal" class="modal">
+        <div class="modal-content">
+            <h2>Neues Workout</h2>
+            <div class="form-group">
+                <label class="form-label" for="workout-name">Workout-Name</label>
+                <input type="text" id="workout-name" class="form-input" placeholder="z.B. Oberkörper, Beine, ...">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Übungen auswählen</label>
+                <div id="workout-exercise-selection"></div>
+            </div>
+            
+            <div class="button-group">
+                <button class="button button-secondary" onclick="hideModal('new-workout-modal')">Abbrechen</button>
+                <button class="button button-primary" onclick="createWorkout()">Speichern</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="new-exercise-modal" class="modal">
+        <div class="modal-content">
+            <h2>Neue Übung</h2>
+            <div class="form-group">
+                <label class="form-label" for="exercise-name">Name</label>
+                <input type="text" id="exercise-name" class="form-input" placeholder="z.B. Bankdrücken, Kniebeugen, ...">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="exercise-notes">Notizen</label>
+                <textarea id="exercise-notes" class="form-input form-textarea" placeholder="Notizen zur Übung..."></textarea>
+            </div>
+            
+            <div class="button-group">
+                <button class="button button-secondary" onclick="hideModal('new-exercise-modal')">Abbrechen</button>
+                <button class="button button-primary" onclick="createExercise()">Speichern</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="add-set-modal" class="modal">
+        <div class="modal-content">
+            <h2>Neuer Satz</h2>
+            <div class="form-group">
+                <label class="form-label" for="set-weight">Gewicht (kg)</label>
+                <input type="number" id="set-weight" class="form-input" step="0.5" min="0">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="set-reps">Wiederholungen</label>
+                <input type="number" id="set-reps" class="form-input" min="0">
+            </div>
+            
+            <div class="button-group">
+                <button class="button button-secondary" onclick="hideModal('add-set-modal')">Abbrechen</button>
+                <button class="button button-primary" onclick="addSet()">Speichern</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="new-measurement-modal" class="modal">
+        <div class="modal-content">
+            <h2>Neuer Körperwert</h2>
+            <div class="form-group">
+                <label class="form-label" for="measurement-name">Name</label>
+                <input type="text" id="measurement-name" class="form-input" placeholder="z.B. Gewicht, Körperfett, ...">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="measurement-unit">Einheit</label>
+                <input type="text" id="measurement-unit" class="form-input" placeholder="z.B. kg, cm, %, ...">
+            </div>
+            
+            <div class="button-group">
+                <button class="button button-secondary" onclick="hideModal('new-measurement-modal')">Abbrechen</button>
+                <button class="button button-primary" onclick="createMeasurement()">Speichern</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="add-measurement-entry-modal" class="modal">
+        <div class="modal-content">
+            <h2>Neuer Eintrag</h2>
+            <div class="form-group">
+                <label class="form-label" for="measurement-value">Wert (<span id="measurement-unit-display"></span>)</label>
+                <input type="number" id="measurement-value" class="form-input" step="0.1" min="0">
+            </div>
+            
+            <div class="button-group">
+                <button class="button button-secondary" onclick="hideModal('add-measurement-entry-modal')">Abbrechen</button>
+                <button class="button button-primary" onclick="addMeasurementEntry()">Speichern</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab Bar -->
+    <div class="tabbar">
+        <a href="#" class="tab active" data-tab="workouts" onclick="switchTab('workouts'); return false;">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29z"/>
+            </svg>
+            <span class="tab-label">Workouts</span>
+        </a>
+        <a href="#" class="tab" data-tab="exercises" onclick="switchTab('exercises'); return false;">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path d="M13.5,5.5C14.59,5.5 15.5,4.58 15.5,3.5C15.5,2.38 14.59,1.5 13.5,1.5C12.39,1.5 11.5,2.38 11.5,3.5C11.5,4.58 12.39,5.5 13.5,5.5M9.89,19.38L10.89,15L13,17V23H15V15.5L12.89,13.5L13.5,10.5C14.79,12 16.79,13 19,13V11C17.09,11 15.5,10 14.69,8.58L13.69,7C13.29,6.38 12.69,6 12,6C11.69,6 11.5,6.08 11.19,6.08L6,8.28V13H8V9.58L9.79,8.88L8.19,17L3.29,16L2.89,18L9.89,19.38Z"/>
+            </svg>
+            <span class="tab-label">Übungen</span>
+        </a>
+        <a href="#" class="tab" data-tab="measurements" onclick="switchTab('measurements'); return false;">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path d="M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z"/>
+            </svg>
+            <span class="tab-label">Körperwerte</span>
+        </a>
+    </div>
+</body>
+
+    <script>
+                // Data Models
+        class Exercise {
+            constructor(id, name, notes) {
+                this.id = id || crypto.randomUUID();
+                this.name = name || '';
+                this.sets = [];
+                this.notes = notes || '';
+            }
+            
+            addSet(weight, reps) {
+                const newSet = {
+                    id: crypto.randomUUID(),
+                    date: new Date(),
+                    weight: parseFloat(weight) || 0,
+                    reps: parseInt(reps) || 0
+                };
+                this.sets.push(newSet);
+                return newSet;
+            }
+            
+            get latestWeight() {
+                const sortedSets = [...this.sets].sort((a, b) => new Date(b.date) - new Date(a.date));
+                return sortedSets.length > 0 ? sortedSets[0].weight : 0;
+            }
+            
+            get latestReps() {
+                const sortedSets = [...this.sets].sort((a, b) => new Date(b.date) - new Date(a.date));
+                return sortedSets.length > 0 ? sortedSets[0].reps : 0;
+            }
+        }
+
+        class Workout {
+            constructor(id, name, exerciseIds) {
+                this.id = id || crypto.randomUUID();
+                this.name = name || '';
+                this.exerciseIds = exerciseIds || []; // Speichere nur die IDs
+                this.date = new Date();
+            }
+        }
+
+        class BodyMeasurement {
+            constructor(id, name, unit) {
+                this.id = id || crypto.randomUUID();
+                this.name = name || '';
+                this.unit = unit || '';
+                this.entries = [];
+            }
+            
+            addEntry(value) {
+                const newEntry = {
+                    id: crypto.randomUUID(),
+                    date: new Date(),
+                    value: parseFloat(value) || 0
+                };
+                this.entries.push(newEntry);
+                return newEntry;
+            }
+        }
+
+        // App State
+        const state = {
+            exercises: [],
+            workouts: [],
+            bodyMeasurements: [],
+            currentExerciseId: null,
+            currentWorkoutId: null,
+            currentMeasurementId: null,
+            timer: {
+                timeRemaining: 180,
+                isRunning: false,
+                interval: null
+            }
+        };
+
+        // DOM References
+        const elements = {
+            screens: {
+                workouts: document.getElementById('workouts-screen'),
+                workoutDetail: document.getElementById('workout-detail-screen'),
+                exercises: document.getElementById('exercises-screen'),
+                exerciseDetail: document.getElementById('exercise-detail-screen'),
+                exerciseProgress: document.getElementById('exercise-progress-screen'),
+                measurements: document.getElementById('measurements-screen'),
+                measurementDetail: document.getElementById('measurement-detail-screen')
+            },
+            lists: {
+                workouts: document.getElementById('workouts-list'),
+                workoutExercises: document.getElementById('workout-exercises-list'),
+                exercises: document.getElementById('exercises-list'),
+                exerciseSets: document.getElementById('exercise-sets-list'),
+                measurements: document.getElementById('measurements-list'),
+                measurementEntries: document.getElementById('measurement-entries-list')
+            },
+            modals: {
+                newWorkout: document.getElementById('new-workout-modal'),
+                newExercise: document.getElementById('new-exercise-modal'),
+                addSet: document.getElementById('add-set-modal'),
+                newMeasurement: document.getElementById('new-measurement-modal'),
+                addMeasurementEntry: document.getElementById('add-measurement-entry-modal')
+            },
+            forms: {
+                workoutName: document.getElementById('workout-name'),
+                exerciseSelection: document.getElementById('workout-exercise-selection'),
+                exerciseName: document.getElementById('exercise-name'),
+                exerciseNotes: document.getElementById('exercise-notes'),
+                setWeight: document.getElementById('set-weight'),
+                setReps: document.getElementById('set-reps'),
+                measurementName: document.getElementById('measurement-name'),
+                measurementUnit: document.getElementById('measurement-unit'),
+                measurementValue: document.getElementById('measurement-value'),
+                measurementUnitDisplay: document.getElementById('measurement-unit-display')
+            },
+            details: {
+                workoutTitle: document.getElementById('workout-detail-title'),
+                exerciseTitle: document.getElementById('exercise-detail-title'),
+                exerciseNotes: document.getElementById('exercise-notes'),
+                exerciseProgressTitle: document.getElementById('exercise-progress-title'),
+                measurementTitle: document.getElementById('measurement-detail-title'),
+                progressSection: document.getElementById('progress-section'),
+                measurementProgressChart: document.getElementById('measurement-progress-chart')
+            },
+            timer: {
+                display: document.getElementById('timer-display'),
+                toggle: document.getElementById('timer-toggle'),
+                reset: document.getElementById('timer-reset')
+            },
+            charts: {
+                weight: document.getElementById('weight-chart'),
+                reps: document.getElementById('reps-chart'),
+                measurement: document.getElementById('measurement-chart')
+            },
+            tabs: document.querySelectorAll('.tab')
+        };
+
+        // Charts
+        let weightChart, repsChart, measurementChart;
+
+        // Navigation
+        function navigateTo(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            
+            document.getElementById(screenId).classList.add('active');
+            
+            // Reset form values when navigating
+            if (screenId === 'workouts-screen' || screenId === 'exercises-screen' || screenId === 'measurements-screen') {
+                resetForms();
+            }
+        }
+
+        function switchTab(tab) {
+            elements.tabs.forEach(tabElement => {
+                tabElement.classList.remove('active');
+            });
+            
+            document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+            
+            switch (tab) {
+                case 'workouts':
+                    navigateTo('workouts-screen');
+                    break;
+                case 'exercises':
+                    navigateTo('exercises-screen');
+                    break;
+                case 'measurements':
+                    navigateTo('measurements-screen');
+                    break;
+            }
+        }
+
+        function populateExerciseSelection() {
+            const exerciseSelectionContainer = elements.forms.exerciseSelection;
+            exerciseSelectionContainer.innerHTML = '';
+
+            if (state.exercises.length === 0) {
+                exerciseSelectionContainer.innerHTML = '<p>Keine Übungen vorhanden. Bitte erstelle zuerst eine Übung.</p>';
+                return;
+            }
+
+            state.exercises.forEach(exercise => {
+                const div = document.createElement('div');
+                div.style.marginBottom = '8px';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = exercise.id;
+                checkbox.id = `exercise-${exercise.id}`;
+                checkbox.style.marginRight = '8px';
+
+                const label = document.createElement('label');
+                label.htmlFor = `exercise-${exercise.id}`;
+                label.textContent = exercise.name;
+
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                exerciseSelectionContainer.appendChild(div);
+            });
+        }
+
+        function createWorkout() {
+            const name = elements.forms.workoutName.value.trim();
+            if (!name) return;
+
+            const selectedExerciseIds = Array.from(elements.forms.exerciseSelection.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(checkbox => checkbox.value);
+
+            if (selectedExerciseIds.length === 0) {
+                alert('Bitte wähle mindestens eine Übung aus');
+                return;
+            }
+
+            const newWorkout = new Workout(null, name, selectedExerciseIds);
+            state.workouts.push(newWorkout);
+
+            saveData();
+            renderWorkoutsList();
+            hideModal('new-workout-modal');
+        }
+
+        // Modal Functions
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            
+            if (modalId === 'new-workout-modal') {
+                populateExerciseSelection();
+            }
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            resetForms();
+        }
+
+        function resetForms() {
+            // Reset all form inputs
+            document.querySelectorAll('.form-input').forEach(input => {
+                input.value = '';
+            });
+            
+            // Reset exercise selection
+            if (elements.forms.exerciseSelection) {
+                elements.forms.exerciseSelection.innerHTML = '';
+            }
+        }
+
+        // Exercise Functions
+        function createExercise() {
+            const name = elements.forms.exerciseName?.value?.trim() || '';
+            const notes = elements.forms.exerciseNotes?.value?.trim() || '';
+
+            if (!name) {
+                alert('Bitte gib einen Namen für die Übung ein');
+                return;
+            }
+
+            const newExercise = new Exercise(null, name, notes);
+            state.exercises.push(newExercise);
+
+            console.log('Exercise created:', newExercise); // For debugging
+
+            saveData();
+            renderExercisesList();
+            hideModal('new-exercise-modal');
+        }
+
+        function showExerciseDetail(exerciseId) {
+            console.log('Opening exercise detail for:', exerciseId);
+            
+            state.currentExerciseId = exerciseId;
+            
+            const exercise = state.exercises.find(e => e.id === exerciseId);
+            if (!exercise) {
+                console.error('Exercise not found:', exerciseId);
+                return;
+            }
+            
+            elements.details.exerciseTitle.textContent = exercise.name;
+            elements.details.exerciseNotes.textContent = exercise.notes || 'Keine Notizen';
+            
+            if (exercise.sets.length === 0) {
+                elements.details.progressSection.classList.add('hidden');
+            } else {
+                elements.details.progressSection.classList.remove('hidden');
+            }
+            
+            renderExerciseSets(exercise);
+            navigateTo('exercise-detail-screen');
+        }
+
+        function showAddSetModal() {
+            const exercise = state.exercises.find(e => e.id === state.currentExerciseId);
+            if (!exercise) return;
+            
+            // Prefill with last values if available
+            if (exercise.sets.length > 0) {
+                const latestSet = [...exercise.sets].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                elements.forms.setWeight.value = latestSet.weight;
+                elements.forms.setReps.value = latestSet.reps;
+            }
+            
+            showModal('add-set-modal');
+        }
+
+        function addSet() {
+            const weight = elements.forms.setWeight.value;
+            const reps = elements.forms.setReps.value;
+            
+            if (!weight || !reps) {
+                alert('Bitte gib Gewicht und Wiederholungen ein');
+                return;
+            }
+            
+            const exercise = state.exercises.find(e => e.id === state.currentExerciseId);
+            if (!exercise) {
+                console.error('Current exercise not found:', state.currentExerciseId);
+                return;
+            }
+            
+            const newSet = exercise.addSet(weight, reps);
+            console.log('New set added:', newSet);
+            
+            // Nach dem Hinzufügen eines Sets ist der Fortschrittsbereich sichtbar
+            elements.details.progressSection.classList.remove('hidden');
+            
+            saveData();
+            renderExerciseSets(exercise);
+            hideModal('add-set-modal');
+        }
+
+        function renderExerciseSets(exercise) {
+            elements.lists.exerciseSets.innerHTML = '';
+            const sortedSets = [...exercise.sets].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            sortedSets.forEach(set => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-item';
+                listItem.innerHTML = `
+                    <div class="list-item-content">
+                        <div class="list-item-title">${set.weight} kg x ${set.reps}</div>
+                        <div class="list-item-subtitle">${new Date(set.date).toLocaleString()}</div>
+                    </div>
+                `;
+                elements.lists.exerciseSets.appendChild(listItem);
+            });
+        }
+
+        // Workout Detail Functions
+        function showWorkoutDetail(workoutId) {
+            state.currentWorkoutId = workoutId;
+            
+            const workout = state.workouts.find(w => w.id === workoutId);
+            if (!workout) return;
+            
+            elements.details.workoutTitle.textContent = workout.name;
+            
+            // Timer zurücksetzen
+            state.timer.timeRemaining = 180;
+            updateTimerDisplay();
+            if (state.timer.isRunning) {
+                stopTimer();
+            }
+            
+            renderWorkoutExercises(workout);
+            navigateTo('workout-detail-screen');
+        }
+
+        function renderWorkoutExercises(workout) {
+            elements.lists.workoutExercises.innerHTML = '';
+            
+            // Für jeden Exercise-ID im Workout
+            workout.exerciseIds.forEach(exerciseId => {
+                const exercise = state.exercises.find(e => e.id === exerciseId);
+                if (!exercise) return;
+                
+                const listItem = document.createElement('li');
+                listItem.className = 'list-item';
+                listItem.onclick = () => showExerciseDetail(exercise.id);
+                
+                let subtitle = 'Keine Sätze';
+                if (exercise.sets.length > 0) {
+                    const latestSet = [...exercise.sets].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                    subtitle = `${latestSet.weight} kg x ${latestSet.reps}`;
+                }
+                
+                listItem.innerHTML = `
+                    <div class="list-item-content">
+                        <div class="list-item-title">${exercise.name}</div>
+                        <div class="list-item-subtitle">${subtitle}</div>
+                    </div>
+                    <span>→</span>
+                `;
+                
+                elements.lists.workoutExercises.appendChild(listItem);
+            });
+        }
+
+        // Timer Functions
+        function updateTimerDisplay() {
+            const minutes = Math.floor(state.timer.timeRemaining / 60);
+            const seconds = state.timer.timeRemaining % 60;
+            elements.timer.display.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function startTimer() {
+            if (state.timer.interval) return;
+            
+            elements.timer.toggle.textContent = '⏸';
+            state.timer.isRunning = true;
+            
+            state.timer.interval = setInterval(() => {
+                if (state.timer.timeRemaining > 0) {
+                    state.timer.timeRemaining--;
+                    updateTimerDisplay();
+                } else {
+                    stopTimer();
+                    alert("Zeit abgelaufen!");
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(state.timer.interval);
+            state.timer.interval = null;
+            state.timer.isRunning = false;
+            elements.timer.toggle.textContent = '▶';
+        }
+
+        function resetTimer() {
+            stopTimer();
+            state.timer.timeRemaining = 180; // 3 Minuten
+            updateTimerDisplay();
+        }
+
+        // Progress Chart Functions
+        function showExerciseProgress(exerciseId) {
+            const exercise = state.exercises.find(e => e.id === exerciseId);
+            if (!exercise) {
+                console.error('Exercise not found:', exerciseId);
+                return;
+            }
+            
+            if (exercise.sets.length === 0) {
+                alert('Diese Übung hat noch keine Sätze');
+                return;
+            }
+            
+            state.currentExerciseId = exerciseId;
+            elements.details.exerciseProgressTitle.textContent = `${exercise.name} Fortschritt`;
+            
+            // Create charts
+            createWeightChart(exercise);
+            createRepsChart(exercise);
+            
+            navigateTo('exercise-progress-screen');
+        }
+
+        function createWeightChart(exercise) {
+            // Destroy existing chart if any
+            if (weightChart) {
+                weightChart.destroy();
+            }
+            
+            const sortedSets = [...exercise.sets].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            const labels = sortedSets.map(set => {
+                const date = new Date(set.date);
+                return date.toLocaleDateString();
+            });
+            
+            const data = sortedSets.map(set => set.weight);
+            
+            weightChart = new Chart(elements.charts.weight, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Gewicht (kg)',
+                        data: data,
+                        borderColor: '#007afa',
+                        backgroundColor: 'rgba(0, 122, 250, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function createRepsChart(exercise) {
+            // Destroy existing chart if any
+            if (repsChart) {
+                repsChart.destroy();
+            }
+            
+            const sortedSets = [...exercise.sets].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            const labels = sortedSets.map(set => {
+                const date = new Date(set.date);
+                return date.toLocaleDateString();
+            });
+            
+            const data = sortedSets.map(set => set.reps);
+            
+            repsChart = new Chart(elements.charts.reps, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Wiederholungen',
+                        data: data,
+                        borderColor: '#5ac8fa',
+                        backgroundColor: 'rgba(90, 200, 250, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Measurement Functions
+        function createMeasurement() {
+            const name = elements.forms.measurementName.value.trim();
+            const unit = elements.forms.measurementUnit.value.trim();
+            
+            if (!name || !unit) return;
+            
+            const newMeasurement = new BodyMeasurement(null, name, unit);
+            state.bodyMeasurements.push(newMeasurement);
+            
+            saveData();
+            renderMeasurementsList();
+            hideModal('new-measurement-modal');
+        }
+
+        function showMeasurementDetail(measurementId) {
+            state.currentMeasurementId = measurementId;
+            
+            const measurement = state.bodyMeasurements.find(m => m.id === measurementId);
+            if (!measurement) return;
+            
+            elements.details.measurementTitle.textContent = measurement.name;
+            
+            if (measurement.entries.length === 0) {
+                elements.details.measurementProgressChart.classList.add('hidden');
+            } else {
+                elements.details.measurementProgressChart.classList.remove('hidden');
+                createMeasurementChart(measurement);
+            }
+            
+            renderMeasurementEntries(measurement);
+            navigateTo('measurement-detail-screen');
+        }
+
+        function showAddMeasurementEntryModal() {
+            const measurement = state.bodyMeasurements.find(m => m.id === state.currentMeasurementId);
+            if (!measurement) return;
+            
+            elements.forms.measurementUnitDisplay.textContent = measurement.unit;
+            
+            // Prefill with last value if available
+            if (measurement.entries.length > 0) {
+                const latestEntry = [...measurement.entries].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                elements.forms.measurementValue.value = latestEntry.value;
+            }
+            
+            showModal('add-measurement-entry-modal');
+        }
+
+        function addMeasurementEntry() {
+            const value = elements.forms.measurementValue.value;
+            
+            if (!value) return;
+            
+            const measurement = state.bodyMeasurements.find(m => m.id === state.currentMeasurementId);
+            if (!measurement) return;
+            
+            measurement.addEntry(value);
+            
+            // Nach dem Hinzufügen eines Eintrags ist der Chart sichtbar
+            elements.details.measurementProgressChart.classList.remove('hidden');
+            
+            saveData();
+            renderMeasurementEntries(measurement);
+            createMeasurementChart(measurement);
+            hideModal('add-measurement-entry-modal');
+        }
+
+        function renderMeasurementEntries(measurement) {
+            elements.lists.measurementEntries.innerHTML = '';
+            
+            const sortedEntries = [...measurement.entries].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            sortedEntries.forEach(entry => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-item';
+                listItem.innerHTML = `
+                    <div class="list-item-content">
+                        <div class="list-item-title">${entry.value} ${measurement.unit}</div>
+                        <div class="list-item-subtitle">${new Date(entry.date).toLocaleString()}</div>
+                    </div>
+                `;
+                elements.lists.measurementEntries.appendChild(listItem);
+            });
+        }
+
+        function createMeasurementChart(measurement) {
+            // Destroy existing chart if any
+            if (measurementChart) {
+                measurementChart.destroy();
+            }
+            
+            const sortedEntries = [...measurement.entries].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            const labels = sortedEntries.map(entry => {
+                const date = new Date(entry.date);
+                return date.toLocaleDateString();
+            });
+            
+            const data = sortedEntries.map(entry => entry.value);
+            
+            measurementChart = new Chart(elements.charts.measurement, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `${measurement.name} (${measurement.unit})`,
+                        data: data,
+                        borderColor: '#007afa',
+                        backgroundColor: 'rgba(0, 122, 250, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Local Storage Functions
+        function saveData() {
+            try {
+                const dataToSave = {
+                    exercises: state.exercises,
+                    workouts: state.workouts,
+                    bodyMeasurements: state.bodyMeasurements
+                };
+                
+                const jsonData = JSON.stringify(dataToSave);
+                localStorage.setItem('gymTrackerData', jsonData);
+                
+                console.log('Data saved successfully:', dataToSave);
+            } catch (error) {
+                console.error('Error saving data:', error);
+                alert('Fehler beim Speichern der Daten. Bitte überprüfe die Konsole für weitere Details.');
+            }
+        }
+
+        function loadData() {
+            try {
+                const data = localStorage.getItem('gymTrackerData');
+                console.log('Raw data from localStorage:', data);
+                
+                if (data) {
+                    const parsedData = JSON.parse(data);
+                    console.log('Parsed data:', parsedData);
+                    
+                    // Ensure each object has the right prototype
+                    if (parsedData.exercises) {
+                        state.exercises = parsedData.exercises.map(e => {
+                            const exercise = new Exercise(e.id, e.name, e.notes);
+                            exercise.sets = e.sets || [];
+                            return exercise;
+                        });
+                        console.log('Loaded exercises:', state.exercises);
+                    }
+                    
+                    if (parsedData.workouts) {
+                        state.workouts = parsedData.workouts.map(w => {
+                            return new Workout(w.id, w.name, w.exerciseIds || []);
+                        });
+                        console.log('Loaded workouts:', state.workouts);
+                    }
+                    
+                    if (parsedData.bodyMeasurements) {
+                        state.bodyMeasurements = parsedData.bodyMeasurements.map(m => {
+                            const measurement = new BodyMeasurement(m.id, m.name, m.unit);
+                            measurement.entries = m.entries || [];
+                            return measurement;
+                        });
+                    }
+                    
+                    renderExercisesList();
+                    renderWorkoutsList();
+                    renderMeasurementsList();
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                // Reset to empty state if data is corrupted
+                state.exercises = [];
+                state.workouts = [];
+                state.bodyMeasurements = [];
+                
+                renderExercisesList();
+                renderWorkoutsList();
+                renderMeasurementsList();
+            }
+        }
+
+        // Render Lists
+        function renderExercisesList() {
+            elements.lists.exercises.innerHTML = '';
+            state.exercises.forEach(exercise => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-item';
+                listItem.onclick = () => showExerciseDetail(exercise.id);
+                listItem.innerHTML = `
+                    <div class="list-item-content">
+                        <div class="list-item-title">${exercise.name}</div>
+                        <div class="list-item-subtitle">${exercise.notes ? (exercise.notes.length > 30 ? exercise.notes.substring(0, 30) + '...' : exercise.notes) : 'Keine Notizen'}</div>
+                    </div>
+                    <span>→</span>
+                `;
+                elements.lists.exercises.appendChild(listItem);
+            });
+        }
+
+        function renderWorkoutsList() {
+            elements.lists.workouts.innerHTML = '';
+            state.workouts.forEach(workout => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-item';
+                listItem.onclick = () => showWorkoutDetail(workout.id);
+                listItem.innerHTML = `
+                    <div class="list-item-content">
+                        <div class="list-item-title">${workout.name}</div>
+                        <div class="list-item-subtitle">${workout.exerciseIds.length} Übungen</div>
+                    </div>
+                    <span>→</span>
+                `;
+                elements.lists.workouts.appendChild(listItem);
+            });
+        }
+
+        function renderMeasurementsList() {
+            elements.lists.measurements.innerHTML = '';
+            state.bodyMeasurements.forEach(measurement => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-item';
+                listItem.onclick = () => showMeasurementDetail(measurement.id);
+                
+                let subtitle = measurement.unit;
+                if (measurement.entries.length > 0) {
+                    const latestEntry = [...measurement.entries].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                    subtitle = `${latestEntry.value} ${measurement.unit}`;
+                }
+                
+                listItem.innerHTML = `
+                    <div class="list-item-content">
+                        <div class="list-item-title">${measurement.name}</div>
+                        <div class="list-item-subtitle">${subtitle}</div>
+                    </div>
+                    <span>→</span>
+                `;
+                elements.lists.measurements.appendChild(listItem);
+            });
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            
+            // Timer button event listeners
+            elements.timer.toggle.addEventListener('click', () => {
+                if (state.timer.isRunning) {
+                    stopTimer();
+                } else {
+                    startTimer();
+                }
+                document.querySelectorAll('.list-item[onclick*="showExerciseDetail"]').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const exerciseId = this.getAttribute('data-exercise-id');
+                        if (exerciseId) {
+                            showExerciseDetail(exerciseId);
+                        }
+                    });
+                });
+
+                // Also connect the progress section click event
+                if (elements.details.progressSection) {
+                    elements.details.progressSection.querySelector('.list-item').onclick = function() {
+                        showExerciseProgress(state.currentExerciseId);
+                    };
+                }
+            });
+            
+            elements.timer.reset.addEventListener('click', resetTimer);
+        });
+
+    </script>
+</html>
